@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createTodo } from '@/app/services/api';
 
 interface TodoFormProps {
   onTodoAdded: () => void;
@@ -11,27 +12,29 @@ export default function TodoForm({ onTodoAdded }: TodoFormProps) {
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     setLoading(true);
+    setError('');
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/todos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description, due_date: dueDate || null }),
+      await createTodo({
+        title,
+        description: description || undefined,
+        due_date: dueDate || undefined,
       });
 
-      if (res.ok) {
-        setTitle('');
-        setDescription('');
-        setDueDate('');
-        onTodoAdded();
-      }
-    } catch (error) {
-      console.error('Error adding todo:', error);
+      setTitle('');
+      setDescription('');
+      setDueDate('');
+      onTodoAdded(); // Refresh the todo list
+    } catch (err: any) {
+      console.error('Error creating todo:', err);
+      setError(err.message || 'Failed to create task');
     } finally {
       setLoading(false);
     }
@@ -40,6 +43,7 @@ export default function TodoForm({ onTodoAdded }: TodoFormProps) {
   return (
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-6 space-y-4">
       <h2 className="text-lg font-semibold text-gray-700">Add New Task</h2>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
       <div>
         <input
           type="text"
@@ -70,7 +74,7 @@ export default function TodoForm({ onTodoAdded }: TodoFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition font-medium"
+        className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition font-medium cursor-pointer disabled:bg-blue-300"
       >
         {loading ? 'Adding...' : 'Add Task'}
       </button>

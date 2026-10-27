@@ -1,13 +1,14 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { pool } from '../config/db.js';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 
-// Get all todos for a specific user (hardcoded user_id = 1 for simplicity before auth)
-export const getTodos = async (req: Request, res: Response) => {
+export const getTodos = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const userId = req.user?.id;
     const [rows] = await pool.query<RowDataPacket[]>(
       'SELECT * FROM todos WHERE user_id = ? ORDER BY created_at DESC',
-      [1]
+      [userId]
     );
     res.json(rows);
   } catch (error) {
@@ -16,9 +17,9 @@ export const getTodos = async (req: Request, res: Response) => {
   }
 };
 
-// Create a new todo
-export const createTodo = async (req: Request, res: Response) => {
+export const createTodo = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const userId = req.user?.id;
     const { title, description, due_date } = req.body;
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
@@ -26,12 +27,12 @@ export const createTodo = async (req: Request, res: Response) => {
 
     const [result] = await pool.query<ResultSetHeader>(
       'INSERT INTO todos (user_id, title, description, due_date) VALUES (?, ?, ?, ?)',
-      [1, title, description || null, due_date || null]
+      [userId, title, description || null, due_date || null]
     );
 
     res.status(201).json({
       id: result.insertId,
-      user_id: 1,
+      user_id: userId,
       title,
       description,
       is_completed: false,
@@ -43,9 +44,9 @@ export const createTodo = async (req: Request, res: Response) => {
   }
 };
 
-// Update todo (toggle complete or edit)
-export const updateTodo = async (req: Request, res: Response) => {
+export const updateTodo = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const userId = req.user?.id;
     const { id } = req.params;
     const { title, description, is_completed, due_date } = req.body;
 
@@ -56,7 +57,7 @@ export const updateTodo = async (req: Request, res: Response) => {
            is_completed = COALESCE(?, is_completed), 
            due_date = COALESCE(?, due_date) 
        WHERE id = ? AND user_id = ?`,
-      [title, description, is_completed, due_date, id, 1]
+      [title, description, is_completed, due_date, id, userId]
     );
 
     if (result.affectedRows === 0) {
@@ -70,13 +71,13 @@ export const updateTodo = async (req: Request, res: Response) => {
   }
 };
 
-// Delete todo
-export const deleteTodo = async (req: Request, res: Response) => {
+export const deleteTodo = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const userId = req.user?.id;
     const { id } = req.params;
     const [result] = await pool.query<ResultSetHeader>(
       'DELETE FROM todos WHERE id = ? AND user_id = ?',
-      [id, 1]
+      [id, userId]
     );
 
     if (result.affectedRows === 0) {

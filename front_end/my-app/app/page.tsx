@@ -1,23 +1,34 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import TodoForm from './components/TodoForm/page';
-import { Todo, fetchTodos, updateTodo, deleteTodo } from './services/api';
+import { useRouter } from 'next/navigation';
+import TodoForm from '@/app/components/TodoForm/page';
+import TodoItem from '@/app/components/TodoItem/page';
+import { Todo, fetchTodos, updateTodo, deleteTodo } from '@/app/services/api';
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const loadTodos = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
     try {
       const data = await fetchTodos();
       setTodos(data);
     } catch (error) {
       console.error('Failed to load todos', error);
+      localStorage.removeItem('token');
+      router.push('/login');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     loadTodos();
@@ -41,12 +52,25 @@ export default function Home() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/login');
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My To-Do List</h1>
-          <p className="text-gray-500 mt-1">Manage your daily tasks efficiently</p>
+        <header className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">My To-Do List</h1>
+            <p className="text-gray-500 mt-1">Manage your daily tasks efficiently</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition text-sm font-medium"
+          >
+            Logout
+          </button>
         </header>
 
         <TodoForm onTodoAdded={loadTodos} />
@@ -60,35 +84,12 @@ export default function Home() {
           ) : (
             <ul className="divide-y divide-gray-200">
               {todos.map((todo) => (
-                <li key={todo.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={todo.is_completed}
-                      onChange={() => handleToggleComplete(todo)}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                    />
-                    <div>
-                      <p className={`font-medium ${todo.is_completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                        {todo.title}
-                      </p>
-                      {todo.description && (
-                        <p className="text-sm text-gray-500">{todo.description}</p>
-                      )}
-                      {todo.due_date && (
-                        <span className="text-xs text-blue-500 mt-1 inline-block">
-                          Due: {new Date(todo.due_date).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(todo.id)}
-                    className="text-red-500 hover:text-red-700 text-sm font-medium"
-                  >
-                    Delete
-                  </button>
-                </li>
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  onToggleComplete={handleToggleComplete}
+                  onDelete={handleDelete}
+                />
               ))}
             </ul>
           )}
