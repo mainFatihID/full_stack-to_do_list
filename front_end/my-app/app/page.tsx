@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import TodoForm from '@/app/components/TodoForm/page';
-import TodoItem from '@/app/components/TodoItem/page';
-import { Todo, fetchTodos, updateTodo, deleteTodo } from '@/app/services/api';
+import TodoForm from '@/components/TodoForm';
+import TodoItem from '@/components/TodoItem';
+import { Todo, fetchTodos, updateTodo, deleteTodo } from '@/services/api';
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);

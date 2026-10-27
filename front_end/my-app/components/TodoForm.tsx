@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createTodo } from '@/app/services/api';
+import { createTodo } from '@/services/api';
 
 interface TodoFormProps {
   onTodoAdded: () => void;

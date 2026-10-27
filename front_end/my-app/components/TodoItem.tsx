@@ -1,6 +1,6 @@
 'use client';
 
-import { Todo } from '../../services/api';
+import { Todo } from '../services/api';
 
 interface TodoItemProps {
   todo: Todo;
